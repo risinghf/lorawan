@@ -36,7 +36,7 @@ func (b *cn470Band) GetDefaultMaxUplinkEIRP() float32 {
 
 func (b *cn470Band) GetPingSlotFrequency(devAddr lorawan.DevAddr, beaconTime time.Duration) (uint32, error) {
 	downlinkChannel := (int(binary.BigEndian.Uint32(devAddr[:])) + int(beaconTime/(128*time.Second))) % 8
-	return b.downlinkChannels[downlinkChannel].Frequency, nil
+	return b.downlinkChannels[downlinkChannel+40].Frequency, nil
 }
 
 func (b *cn470Band) GetRX1ChannelIndexForUplinkChannelIndex(uplinkChannel int) (int, error) {
