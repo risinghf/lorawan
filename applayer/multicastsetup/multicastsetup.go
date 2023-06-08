@@ -7,8 +7,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 // CID defines the command identifier.
@@ -63,7 +63,7 @@ func GetCommandPayload(uplink bool, c CID) (CommandPayload, error) {
 	if !ok {
 		return nil, ErrNoPayloadForCID
 	}
-
+	
 	return v(), nil
 }
 
@@ -83,7 +83,7 @@ type Command struct {
 // MarshalBinary encodes the command to a slice of bytes.
 func (c Command) MarshalBinary() ([]byte, error) {
 	b := []byte{byte(c.CID)}
-
+	
 	if c.Payload != nil {
 		p, err := c.Payload.MarshalBinary()
 		if err != nil {
@@ -91,7 +91,7 @@ func (c Command) MarshalBinary() ([]byte, error) {
 		}
 		b = append(b, p...)
 	}
-
+	
 	return b, nil
 }
 
@@ -100,9 +100,9 @@ func (c *Command) UnmarshalBinary(uplink bool, data []byte) error {
 	if len(data) == 0 {
 		return errors.New("lorawan/applayer/multicastsetup: at least 1 byte is expected")
 	}
-
+	
 	c.CID = CID(data[0])
-
+	
 	p, err := GetCommandPayload(uplink, c.CID)
 	if err != nil {
 		if err == ErrNoPayloadForCID {
@@ -110,12 +110,12 @@ func (c *Command) UnmarshalBinary(uplink bool, data []byte) error {
 		}
 		return err
 	}
-
+	
 	c.Payload = p
 	if err := c.Payload.UnmarshalBinary(data[1:]); err != nil {
 		return err
 	}
-
+	
 	return nil
 }
 
@@ -133,7 +133,7 @@ type Commands []Command
 // MarshalBinary encodes the commands to a slice of bytes.
 func (c Commands) MarshalBinary() ([]byte, error) {
 	var out []byte
-
+	
 	for _, cmd := range c {
 		b, err := cmd.MarshalBinary()
 		if err != nil {
@@ -147,7 +147,7 @@ func (c Commands) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary decodes a slice of bytes into a slice of commands.
 func (c *Commands) UnmarshalBinary(uplink bool, data []byte) error {
 	var i int
-
+	
 	for i < len(data) {
 		var cmd Command
 		if err := cmd.UnmarshalBinary(uplink, data[i:]); err != nil {
@@ -156,7 +156,7 @@ func (c *Commands) UnmarshalBinary(uplink bool, data []byte) error {
 		i += cmd.Size()
 		*c = append(*c, cmd)
 	}
-
+	
 	return nil
 }
 
@@ -184,7 +184,7 @@ func (p *PackageVersionAnsPayload) UnmarshalBinary(data []byte) error {
 	if len(data) < p.Size() {
 		return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 	}
-
+	
 	p.PackageIdentifier = data[0]
 	p.PackageVersion = data[1]
 	return nil
@@ -221,11 +221,11 @@ func (p *McGroupStatusReqPayload) UnmarshalBinary(data []byte) error {
 	if len(data) < p.Size() {
 		return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 	}
-
+	
 	for i := range p.CmdMask.RegGroupMask {
 		p.CmdMask.RegGroupMask[i] = data[0]&(1<<uint8(i)) != 0
 	}
-
+	
 	return nil
 }
 
@@ -255,7 +255,7 @@ func (p McGroupStatusAnsPayload) Size() int {
 			ansGroupMaskCount++
 		}
 	}
-
+	
 	return 1 + (5 * ansGroupMaskCount)
 }
 
@@ -264,34 +264,34 @@ func (p McGroupStatusAnsPayload) MarshalBinary() ([]byte, error) {
 	if len(p.Items) > 4 {
 		return nil, errors.New("lorawan/applayer/multicastsetup: max number of items is 4")
 	}
-
+	
 	var ansGroupMaskCount int
 	b := make([]byte, 1+(5*len(p.Items)))
-
+	
 	for i, mask := range p.Status.AnsGroupMask {
 		if mask {
 			b[0] |= (1 << uint8(i))
 			ansGroupMaskCount++
 		}
 	}
-
+	
 	if ansGroupMaskCount != len(p.Items) {
 		return nil, errors.New("lorawan/applayer/multicastsetup: number of items does not match AnsGroupMatch")
 	}
-
+	
 	b[0] |= (p.Status.NbTotalGroups & 0x07) << 4 // 3 bits
-
+	
 	for i := range p.Items {
 		offset := 1 + (i * 5)
 		b[offset] = p.Items[i].McGroupID & 0x03 // first two bits
-
+		
 		bb, err := p.Items[i].McAddr.MarshalBinary()
 		if err != nil {
 			return nil, err
 		}
 		copy(b[offset+1:offset+5], bb)
 	}
-
+	
 	return b, nil
 }
 
@@ -300,7 +300,7 @@ func (p *McGroupStatusAnsPayload) UnmarshalBinary(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("lorawan/applayer/multicastsetup: at least 1 byte is expected")
 	}
-
+	
 	var ansGroupMaskCount int
 	for i := range p.Status.AnsGroupMask {
 		if data[0]&(1<<uint8(i)) != 0 {
@@ -308,26 +308,26 @@ func (p *McGroupStatusAnsPayload) UnmarshalBinary(data []byte) error {
 			ansGroupMaskCount++
 		}
 	}
-
+	
 	p.Status.NbTotalGroups = (data[0] & 0x70) >> 4
-
+	
 	if len(data) < p.Size() {
 		return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 	}
-
+	
 	for i := 0; i < ansGroupMaskCount; i++ {
 		offset := 1 + (i * 5)
 		item := McGroupStatusAnsPayloadItem{
 			McGroupID: data[offset] & 0x03, // first two bits
 		}
-
+		
 		if err := item.McAddr.UnmarshalBinary(data[offset+1 : offset+5]); err != nil {
 			return err
 		}
-
+		
 		p.Items = append(p.Items, item)
 	}
-
+	
 	return nil
 }
 
@@ -353,26 +353,26 @@ func (p McGroupSetupReqPayload) Size() int {
 // MarshalBinary encodes the payload to a slice of bytes.
 func (p McGroupSetupReqPayload) MarshalBinary() ([]byte, error) {
 	b := make([]byte, p.Size())
-
+	
 	// McGroupIDHeader
 	b[0] = p.McGroupIDHeader.McGroupID & 0x03 // first 2 bits
-
+	
 	// McAddr
 	bb, err := p.McAddr.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
 	copy(b[1:5], bb)
-
+	
 	// The McKeyEncrypted is copied as-is.
 	copy(b[5:21], p.McKeyEncrypted[:])
-
+	
 	// MinMcFCnt
 	binary.LittleEndian.PutUint32(b[21:25], p.MinMcFCnt)
-
+	
 	// MaxMcFCnt
 	binary.LittleEndian.PutUint32(b[25:29], p.MaxMcFCnt)
-
+	
 	return b, nil
 }
 
@@ -381,24 +381,24 @@ func (p *McGroupSetupReqPayload) UnmarshalBinary(data []byte) error {
 	if len(data) < p.Size() {
 		return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 	}
-
+	
 	// McAddr
 	p.McGroupIDHeader.McGroupID = data[0] & 0x03 // 2 bits
-
+	
 	// McAddr
 	if err := p.McAddr.UnmarshalBinary(data[1:5]); err != nil {
 		return err
 	}
-
+	
 	// The McKeyEncrypted is copied as-is.
 	copy(p.McKeyEncrypted[:], data[5:21])
-
+	
 	// MinMcFCnt
 	p.MinMcFCnt = binary.LittleEndian.Uint32(data[21:25])
-
+	
 	// MaxMcFCnt
 	p.MaxMcFCnt = binary.LittleEndian.Uint32(data[25:29])
-
+	
 	return nil
 }
 
@@ -433,10 +433,10 @@ func (p *McGroupSetupAnsPayload) UnmarshalBinary(data []byte) error {
 	if len(data) < p.Size() {
 		return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 	}
-
+	
 	p.McGroupIDHeader.McGroupID = data[0] & 0x03 // first 2 bits
 	p.McGroupIDHeader.IDError = data[0]&0x04 != 0
-
+	
 	return nil
 }
 
@@ -490,12 +490,12 @@ func (p McGroupDeleteAnsPayload) Size() int {
 // MarshalBinary encodes the payload to a slice of bytes.
 func (p McGroupDeleteAnsPayload) MarshalBinary() ([]byte, error) {
 	b := make([]byte, p.Size())
-
+	
 	b[0] = p.McGroupIDHeader.McGroupID & 0x03 // first two bits
 	if p.McGroupIDHeader.McGroupUndefined {
 		b[0] |= 0x04
 	}
-
+	
 	return b, nil
 }
 
@@ -504,10 +504,10 @@ func (p *McGroupDeleteAnsPayload) UnmarshalBinary(data []byte) error {
 	if len(data) < p.Size() {
 		return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 	}
-
+	
 	p.McGroupIDHeader.McGroupID = data[0] & 0x03
 	p.McGroupIDHeader.McGroupUndefined = data[0]&0x04 != 0
-
+	
 	return nil
 }
 
@@ -538,16 +538,16 @@ func (p *McClassCSessionReqPayload) Size() int {
 // MarshalBinary encodes the payload to a slice of bytes.
 func (p McClassCSessionReqPayload) MarshalBinary() ([]byte, error) {
 	b := make([]byte, p.Size())
-
+	
 	// McGroupIDHeader
 	b[0] = p.McGroupIDHeader.McGroupID & 0x03 // first 2 bits
-
+	
 	// SessionTime
 	binary.LittleEndian.PutUint32(b[1:5], p.SessionTime)
-
+	
 	// SessionTimeOut
 	b[5] = p.SessionTimeOut.TimeOut & 0x0f // first 4 bits
-
+	
 	// DLFrequency
 	if p.DLFrequency%100 != 0 {
 		return nil, errors.New("lorawan/applayer/multicastsetup: DLFrequency must be a multiple of 100")
@@ -555,10 +555,10 @@ func (p McClassCSessionReqPayload) MarshalBinary() ([]byte, error) {
 	dlFreqB := make([]byte, 4)
 	binary.LittleEndian.PutUint32(dlFreqB, p.DLFrequency/100)
 	copy(b[6:9], dlFreqB[:3])
-
+	
 	// DR
 	b[9] = p.DR
-
+	
 	return b, nil
 }
 
@@ -567,24 +567,24 @@ func (p *McClassCSessionReqPayload) UnmarshalBinary(data []byte) error {
 	if len(data) < p.Size() {
 		return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 	}
-
+	
 	// McGroupIDHeader
 	p.McGroupIDHeader.McGroupID = data[0] & 0x03
-
+	
 	// SessionTime
 	p.SessionTime = binary.LittleEndian.Uint32(data[1:5])
-
+	
 	// SessionTimeOut
 	p.SessionTimeOut.TimeOut = data[5] & 0x0f
-
+	
 	// DLFrequency
 	dlFreqB := make([]byte, 4)
 	copy(dlFreqB, data[6:9])
 	p.DLFrequency = binary.LittleEndian.Uint32(dlFreqB) * 100
-
+	
 	// DR
 	p.DR = data[9]
-
+	
 	return nil
 }
 
@@ -622,13 +622,13 @@ func (p McClassCSessionAnsPayload) MarshalBinary() ([]byte, error) {
 	if p.StatusAndMcGroupID.hasError() && p.TimeToStart != nil {
 		return nil, errors.New("lorawan/applayer/multicastsetup: TimeToStart must be nil when StatusAndMcGroupID contains an error")
 	}
-
+	
 	if !p.StatusAndMcGroupID.hasError() && p.TimeToStart == nil {
 		return nil, errors.New("lorawan/applayer/multicastsetup: TimeToStart must not be nil")
 	}
-
+	
 	b := make([]byte, 1)
-
+	
 	// StatusAndMcGroupID
 	b[0] = p.StatusAndMcGroupID.McGroupID & 0x03 // first 2 bits
 	if p.StatusAndMcGroupID.DRError {
@@ -640,14 +640,14 @@ func (p McClassCSessionAnsPayload) MarshalBinary() ([]byte, error) {
 	if p.StatusAndMcGroupID.McGroupUndefined {
 		b[0] |= 0x10
 	}
-
+	
 	// TimeToStart
 	if !p.StatusAndMcGroupID.hasError() {
 		ttsB := make([]byte, 4)
 		binary.LittleEndian.PutUint32(ttsB, *p.TimeToStart)
 		b = append(b, ttsB[:3]...)
 	}
-
+	
 	return b, nil
 }
 
@@ -656,24 +656,24 @@ func (p *McClassCSessionAnsPayload) UnmarshalBinary(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("lorawan/applayer/multicastsetup: at least 1 byte is expected")
 	}
-
+	
 	// StatusAndMCGroupID
 	p.StatusAndMcGroupID.McGroupID = data[0] & 0x03
 	p.StatusAndMcGroupID.DRError = data[0]&0x04 != 0
 	p.StatusAndMcGroupID.FreqError = data[0]&0x08 != 0
 	p.StatusAndMcGroupID.McGroupUndefined = data[0]&0x10 != 0
-
+	
 	if !p.StatusAndMcGroupID.hasError() {
 		if len(data) < p.Size() {
 			return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 		}
-
+		
 		ttsB := make([]byte, 4)
 		copy(ttsB, data[1:4])
 		tts := binary.LittleEndian.Uint32(ttsB)
 		p.TimeToStart = &tts
 	}
-
+	
 	return nil
 }
 
@@ -705,17 +705,17 @@ func (p McClassBSessionReqPayload) Size() int {
 // MarshalBinary encodes the payload to a slice of bytes.
 func (p McClassBSessionReqPayload) MarshalBinary() ([]byte, error) {
 	b := make([]byte, p.Size())
-
+	
 	// McGroupIDHeader
 	b[0] = p.McGroupIDHeader.McGroupID & 0x03 // first 2 bits
-
+	
 	// SessionTime
 	binary.LittleEndian.PutUint32(b[1:5], p.SessionTime)
-
+	
 	// TimeOutPeriodicity
 	b[5] = p.TimeOutPeriodicity.TimeOut & 0x1f // first 4 bits
 	b[5] |= (p.TimeOutPeriodicity.Periodicity & 0x17) << 4
-
+	
 	// DLFrequency
 	if p.DLFrequency%100 != 0 {
 		return nil, errors.New("lorawan/applayer/multicastsetup: DLFrequency must be a multiple of 100")
@@ -723,10 +723,10 @@ func (p McClassBSessionReqPayload) MarshalBinary() ([]byte, error) {
 	dlFreqB := make([]byte, 4)
 	binary.LittleEndian.PutUint32(dlFreqB, p.DLFrequency/100)
 	copy(b[6:9], dlFreqB[:3])
-
+	
 	// DR
 	b[9] = p.DR
-
+	
 	return b, nil
 }
 
@@ -735,25 +735,25 @@ func (p *McClassBSessionReqPayload) UnmarshalBinary(data []byte) error {
 	if len(data) < p.Size() {
 		return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 	}
-
+	
 	// McGroupIDHeader
 	p.McGroupIDHeader.McGroupID = data[0] & 0x03
-
+	
 	// SessionTime
 	p.SessionTime = binary.LittleEndian.Uint32(data[1:5])
-
+	
 	// TimeOutPeriodicity
 	p.TimeOutPeriodicity.TimeOut = data[5] & 0x1f
 	p.TimeOutPeriodicity.Periodicity = (data[5] >> 4) & 0x17
-
+	
 	// DLFrequency
 	dlFreqB := make([]byte, 4)
 	copy(dlFreqB, data[6:9])
 	p.DLFrequency = binary.LittleEndian.Uint32(dlFreqB) * 100
-
+	
 	// DR
 	p.DR = data[9]
-
+	
 	return nil
 }
 
@@ -791,13 +791,13 @@ func (p McClassBSessionAnsPayload) MarshalBinary() ([]byte, error) {
 	if p.StatusAndMcGroupID.hasError() && p.TimeToStart != nil {
 		return nil, errors.New("lorawan/applayer/multicastsetup: TimeToStart must be nil when StatusAndMcGroupID contains an error")
 	}
-
+	
 	if !p.StatusAndMcGroupID.hasError() && p.TimeToStart == nil {
 		return nil, errors.New("lorawan/applayer/multicastsetup: TimeToStart must not be nil")
 	}
-
+	
 	b := make([]byte, 1)
-
+	
 	// StatusAndMcGroupID
 	b[0] = p.StatusAndMcGroupID.McGroupID & 0x03 // first 2 bits
 	if p.StatusAndMcGroupID.DRError {
@@ -809,13 +809,13 @@ func (p McClassBSessionAnsPayload) MarshalBinary() ([]byte, error) {
 	if p.StatusAndMcGroupID.McGroupUndefined {
 		b[0] |= 0x10
 	}
-
+	
 	if !p.StatusAndMcGroupID.hasError() {
 		ttsB := make([]byte, 4)
 		binary.LittleEndian.PutUint32(ttsB, *p.TimeToStart)
 		b = append(b, ttsB[:3]...)
 	}
-
+	
 	return b, nil
 }
 
@@ -824,23 +824,23 @@ func (p *McClassBSessionAnsPayload) UnmarshalBinary(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("lorawan/applayer/multicastsetup: at least 1 byte is expected")
 	}
-
+	
 	// StatusAndMcGroupID
 	p.StatusAndMcGroupID.McGroupID = data[0] & 0x03
 	p.StatusAndMcGroupID.DRError = data[0]&0x04 != 0
 	p.StatusAndMcGroupID.FreqError = data[0]&0x08 != 0
 	p.StatusAndMcGroupID.McGroupUndefined = data[0]&0x10 != 0
-
+	
 	if !p.StatusAndMcGroupID.hasError() {
 		if len(data) < p.Size() {
 			return fmt.Errorf("lorawan/applayer/multicastsetup: %d bytes are expected", p.Size())
 		}
-
+		
 		ttsB := make([]byte, 4)
 		copy(ttsB, data[1:4])
 		tts := binary.LittleEndian.Uint32(ttsB)
 		p.TimeToStart = &tts
 	}
-
+	
 	return nil
 }

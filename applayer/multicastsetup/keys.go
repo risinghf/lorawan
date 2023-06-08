@@ -3,8 +3,8 @@ package multicastsetup
 import (
 	"crypto/aes"
 	"fmt"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 // GetMcRootKeyForGenAppKey returns the McRootKey given a GenAppKey.
@@ -27,32 +27,32 @@ func GetMcKEKey(mcRootKey lorawan.AES128Key) (lorawan.AES128Key, error) {
 // GetMcAppSKey returns the McAppSKey given the McKey and McAddr.
 func GetMcAppSKey(mcKey lorawan.AES128Key, mcAddr lorawan.DevAddr) (lorawan.AES128Key, error) {
 	b := [16]byte{0x01}
-
+	
 	mcAddrB, err := mcAddr.MarshalBinary()
 	if err != nil {
 		return lorawan.AES128Key{}, err
 	}
 	copy(b[1:5], mcAddrB)
-
+	
 	return getKey(mcKey, b)
 }
 
 // GetMcNetSKey returns the McNetSKey given the McKey and McAddr.
 func GetMcNetSKey(mcKey lorawan.AES128Key, mcAddr lorawan.DevAddr) (lorawan.AES128Key, error) {
 	b := [16]byte{0x02}
-
+	
 	mcAddrB, err := mcAddr.MarshalBinary()
 	if err != nil {
 		return lorawan.AES128Key{}, err
 	}
 	copy(b[1:5], mcAddrB)
-
+	
 	return getKey(mcKey, b)
 }
 
 func getKey(key lorawan.AES128Key, b [16]byte) (lorawan.AES128Key, error) {
 	var out lorawan.AES128Key
-
+	
 	block, err := aes.NewCipher(key[:])
 	if err != nil {
 		return out, err
@@ -60,7 +60,7 @@ func getKey(key lorawan.AES128Key, b [16]byte) (lorawan.AES128Key, error) {
 	if block.BlockSize() != len(b) {
 		return out, fmt.Errorf("block-size of %d bytes is expected", len(b))
 	}
-
+	
 	block.Encrypt(out[:], b[:])
 	return out, nil
 }

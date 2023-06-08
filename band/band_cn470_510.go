@@ -3,8 +3,8 @@ package band
 import (
 	"encoding/binary"
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 type cn470Band struct {
@@ -48,12 +48,12 @@ func (b *cn470Band) GetRX1FrequencyForUplinkFrequency(uplinkFrequency uint32) (u
 	if err != nil {
 		return 0, err
 	}
-
+	
 	rx1Chan, err := b.GetRX1ChannelIndexForUplinkChannelIndex(uplinkChan)
 	if err != nil {
 		return 0, err
 	}
-
+	
 	return b.downlinkChannels[rx1Chan].Frequency, nil
 }
 
@@ -96,7 +96,7 @@ func newCN470Band(repeaterCompatible bool) (Band, error) {
 			downlinkChannels: make([]Channel, 48),
 		},
 	}
-
+	
 	if repeaterCompatible {
 		b.band.maxPayloadSizePerDR = map[string]map[string]map[int]MaxPayloadSize{
 			LoRaWAN_1_0_1: map[string]map[int]MaxPayloadSize{
@@ -234,7 +234,7 @@ func newCN470Band(repeaterCompatible bool) (Band, error) {
 			},
 		}
 	}
-
+	
 	// initialize uplink channels
 	for i := uint32(0); i < 96; i++ {
 		b.uplinkChannels[i] = Channel{
@@ -244,7 +244,7 @@ func newCN470Band(repeaterCompatible bool) (Band, error) {
 			enabled:   true,
 		}
 	}
-
+	
 	// initialize downlink channels
 	for i := uint32(0); i < 48; i++ {
 		b.downlinkChannels[i] = Channel{
@@ -254,6 +254,6 @@ func newCN470Band(repeaterCompatible bool) (Band, error) {
 			enabled:   true,
 		}
 	}
-
+	
 	return &b, nil
 }

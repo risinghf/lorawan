@@ -2,8 +2,8 @@ package band
 
 import (
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 type cn779Band struct {
@@ -88,7 +88,7 @@ func newCN779Band(repeaterCompatible bool) (Band, error) {
 				{Frequency: 779700000, MinDR: 0, MaxDR: 5, enabled: true},
 				{Frequency: 779900000, MinDR: 0, MaxDR: 5, enabled: true},
 			},
-
+			
 			downlinkChannels: []Channel{
 				{Frequency: 779500000, MinDR: 0, MaxDR: 5, enabled: true},
 				{Frequency: 779700000, MinDR: 0, MaxDR: 5, enabled: true},
@@ -96,7 +96,7 @@ func newCN779Band(repeaterCompatible bool) (Band, error) {
 			},
 		},
 	}
-
+	
 	if repeaterCompatible {
 		b.band.maxPayloadSizePerDR = map[string]map[string]map[int]MaxPayloadSize{
 			LoRaWAN_1_0_0: map[string]map[int]MaxPayloadSize{
@@ -224,6 +224,6 @@ func newCN779Band(repeaterCompatible bool) (Band, error) {
 			},
 		}
 	}
-
+	
 	return &b, nil
 }

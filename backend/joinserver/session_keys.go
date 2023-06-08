@@ -3,10 +3,10 @@ package joinserver
 import (
 	"crypto/aes"
 	"fmt"
-
+	
 	"github.com/pkg/errors"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 // getFNwkSIntKey returns the FNwkSIntKey.
@@ -44,27 +44,27 @@ func getSKey(optNeg bool, typ byte, nwkKey lorawan.AES128Key, netID lorawan.NetI
 	var key lorawan.AES128Key
 	b := make([]byte, 16)
 	b[0] = typ
-
+	
 	netIDB, err := netID.MarshalBinary()
 	if err != nil {
 		return key, errors.Wrap(err, "marshal binary error")
 	}
-
+	
 	joinEUIB, err := joinEUI.MarshalBinary()
 	if err != nil {
 		return key, errors.Wrap(err, "marshal binary error")
 	}
-
+	
 	joinNonceB, err := joinNonce.MarshalBinary()
 	if err != nil {
 		return key, errors.Wrap(err, "marshal binary error")
 	}
-
+	
 	devNonceB, err := devNonce.MarshalBinary()
 	if err != nil {
 		return key, errors.Wrap(err, "marshal binary error")
 	}
-
+	
 	if optNeg {
 		copy(b[1:4], joinNonceB)
 		copy(b[4:12], joinEUIB)
@@ -74,7 +74,7 @@ func getSKey(optNeg bool, typ byte, nwkKey lorawan.AES128Key, netID lorawan.NetI
 		copy(b[4:7], netIDB)
 		copy(b[7:9], devNonceB)
 	}
-
+	
 	block, err := aes.NewCipher(nwkKey[:])
 	if err != nil {
 		return key, err
@@ -83,22 +83,22 @@ func getSKey(optNeg bool, typ byte, nwkKey lorawan.AES128Key, netID lorawan.NetI
 		return key, fmt.Errorf("block-size of %d bytes is expected", len(b))
 	}
 	block.Encrypt(key[:], b)
-
+	
 	return key, nil
 }
 
 func getJSKey(typ byte, devEUI lorawan.EUI64, nwkKey lorawan.AES128Key) (lorawan.AES128Key, error) {
 	var key lorawan.AES128Key
 	b := make([]byte, 16)
-
+	
 	b[0] = typ
-
+	
 	devB, err := devEUI.MarshalBinary()
 	if err != nil {
 		return key, err
 	}
 	copy(b[1:9], devB[:])
-
+	
 	block, err := aes.NewCipher(nwkKey[:])
 	if err != nil {
 		return key, err

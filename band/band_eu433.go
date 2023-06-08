@@ -2,8 +2,8 @@ package band
 
 import (
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 type eu443Band struct {
@@ -88,7 +88,7 @@ func newEU433Band(repeaterCompatible bool) (Band, error) {
 				{Frequency: 433375000, MinDR: 0, MaxDR: 5, enabled: true},
 				{Frequency: 433575000, MinDR: 0, MaxDR: 5, enabled: true},
 			},
-
+			
 			downlinkChannels: []Channel{
 				{Frequency: 433175000, MinDR: 0, MaxDR: 5, enabled: true},
 				{Frequency: 433375000, MinDR: 0, MaxDR: 5, enabled: true},
@@ -96,7 +96,7 @@ func newEU433Band(repeaterCompatible bool) (Band, error) {
 			},
 		},
 	}
-
+	
 	if repeaterCompatible {
 		b.band.maxPayloadSizePerDR = map[string]map[string]map[int]MaxPayloadSize{
 			LoRaWAN_1_0_0: map[string]map[int]MaxPayloadSize{
@@ -248,6 +248,6 @@ func newEU433Band(repeaterCompatible bool) (Band, error) {
 			},
 		}
 	}
-
+	
 	return &b, nil
 }

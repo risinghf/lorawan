@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	
 	keywrap "github.com/NickBall/go-aes-key-wrap"
-	"github.com/brocaar/lorawan"
 	"github.com/pkg/errors"
+	"github.com/risinghf/lorawan"
 )
 
 // RatePolicy defines the RatePolicy type.
@@ -224,17 +224,17 @@ type KeyEnvelope struct {
 // Unwrap unwraps the AESKey with the given Key Encryption Key.
 func (k KeyEnvelope) Unwrap(kek []byte) (lorawan.AES128Key, error) {
 	var key lorawan.AES128Key
-
+	
 	block, err := aes.NewCipher(kek)
 	if err != nil {
 		return key, errors.Wrap(err, "new cipher error")
 	}
-
+	
 	b, err := keywrap.Unwrap(block, k.AESKey[:])
 	if err != nil {
 		return key, errors.Wrap(err, "unwrap key errror")
 	}
-
+	
 	copy(key[:], b)
 	return key, nil
 }
@@ -246,17 +246,17 @@ func NewKeyEnvelope(kekLabel string, kek []byte, key lorawan.AES128Key) (*KeyEnv
 			AESKey: HEXBytes(key[:]),
 		}, nil
 	}
-
+	
 	block, err := aes.NewCipher(kek)
 	if err != nil {
 		return nil, errors.Wrap(err, "new cipher error")
 	}
-
+	
 	b, err := keywrap.Wrap(block, key[:])
 	if err != nil {
 		return nil, errors.Wrap(err, "key wrap error")
 	}
-
+	
 	return &KeyEnvelope{
 		KEKLabel: kekLabel,
 		AESKey:   HEXBytes(b),

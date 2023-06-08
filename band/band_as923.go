@@ -3,8 +3,8 @@ package band
 import (
 	"fmt"
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 type as923Band struct {
@@ -53,27 +53,27 @@ func (b *as923Band) GetRX1DataRateIndex(uplinkDR, rx1DROffset int) (int, error) 
 	if rx1DROffset < 0 || rx1DROffset > 7 {
 		return 0, fmt.Errorf("lorawan/band: invalid RX1 data-rate offset: %d", rx1DROffset)
 	}
-
+	
 	if uplinkDR < 0 || uplinkDR > 7 {
 		return 0, fmt.Errorf("lorawan/band: invalid uplink data-rate: %d", uplinkDR)
 	}
-
+	
 	minDR := 0
 	if b.dwellTime == lorawan.DwellTime400ms {
 		minDR = 2
 	}
-
+	
 	effectiveRX1DROffset := []int{0, 1, 2, 3, 4, 5, -1, -2}[rx1DROffset]
 	dr := uplinkDR - effectiveRX1DROffset
-
+	
 	if dr < minDR {
 		dr = minDR
 	}
-
+	
 	if dr > 5 {
 		dr = 5
 	}
-
+	
 	return dr, nil
 }
 
@@ -121,7 +121,7 @@ func newAS923Band(repeaterCompatible bool, dt lorawan.DwellTime, frequencyOffset
 			},
 		},
 	}
-
+	
 	if dt == lorawan.DwellTime400ms {
 		if repeaterCompatible {
 			// repeater compatible + dwell time
@@ -357,6 +357,6 @@ func newAS923Band(repeaterCompatible bool, dt lorawan.DwellTime, frequencyOffset
 			}
 		}
 	}
-
+	
 	return &b, nil
 }

@@ -3,17 +3,17 @@ package band
 import (
 	"testing"
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 	"github.com/stretchr/testify/require"
 )
 
 func TestISM2400Band(t *testing.T) {
 	assert := require.New(t)
-
+	
 	band, err := GetConfig(ISM2400, true, lorawan.DwellTimeNoLimit)
 	assert.NoError(err)
-
+	
 	t.Run("GetDefaults", func(t *testing.T) {
 		assert := require.New(t)
 		assert.Equal(Defaults{
@@ -25,34 +25,34 @@ func TestISM2400Band(t *testing.T) {
 			JoinAcceptDelay2: time.Second * 6,
 		}, band.GetDefaults())
 	})
-
+	
 	t.Run("GetDownlinkTXPower", func(t *testing.T) {
 		assert := require.New(t)
 		assert.Equal(10, band.GetDownlinkTXPower(2423000000))
 	})
-
+	
 	t.Run("GetPingSlotFrequency", func(t *testing.T) {
 		assert := require.New(t)
 		f, err := band.GetPingSlotFrequency(lorawan.DevAddr{}, 0)
 		assert.NoError(err)
 		assert.EqualValues(2424000000, f)
-
+		
 	})
-
+	
 	t.Run("GetRX1ChannelIndexForUplinkChannelIndex", func(t *testing.T) {
 		assert := require.New(t)
 		i, err := band.GetRX1ChannelIndexForUplinkChannelIndex(3)
 		assert.NoError(err)
 		assert.Equal(3, i)
 	})
-
+	
 	t.Run("GetRX1FrequencyForUplinkFrequency", func(t *testing.T) {
 		assert := require.New(t)
 		f, err := band.GetRX1FrequencyForUplinkFrequency(2425000000)
 		assert.NoError(err)
 		assert.EqualValues(2425000000, f)
 	})
-
+	
 	t.Run("Five extra channels", func(t *testing.T) {
 		chans := []uint32{
 			2426000000,
@@ -61,16 +61,16 @@ func TestISM2400Band(t *testing.T) {
 			2429000000,
 			2430000000,
 		}
-
+		
 		for _, c := range chans {
 			band.AddChannel(c, 0, 7)
 		}
-
+		
 		t.Run("GetCustomUplinkChannelIndices", func(t *testing.T) {
 			assert := require.New(t)
 			assert.Equal([]int{3, 4, 5, 6, 7}, band.GetCustomUplinkChannelIndices())
 		})
-
+		
 		t.Run("Test LinkADRReqPayload", func(t *testing.T) {
 			tests := []struct {
 				Name                       string
@@ -123,24 +123,24 @@ func TestISM2400Band(t *testing.T) {
 					// we disable the CFList channels as they became inactive
 				},
 			}
-
+			
 			for _, tst := range tests {
 				t.Run(tst.Name, func(t *testing.T) {
 					assert := require.New(t)
 					for _, i := range tst.DisabledChannels {
 						assert.NoError(band.DisableUplinkChannelIndex(i))
 					}
-
+					
 					pls := band.GetLinkADRReqPayloadsForEnabledUplinkChannelIndices(tst.NodeChannels)
 					assert.Equal(tst.ExpectedLinkADRReqPayloads, pls)
-
+					
 					chans, err := band.GetEnabledUplinkChannelIndicesForLinkADRReqPayloads(tst.NodeChannels, pls)
 					assert.NoError(err)
 					assert.Equal(tst.ExpectedUplinkChannels, chans)
 				})
 			}
 		})
-
+		
 		t.Run("GetUplinkChannelIndex", func(t *testing.T) {
 			tests := []uint32{
 				2403000000,
@@ -152,19 +152,19 @@ func TestISM2400Band(t *testing.T) {
 				2429000000,
 				2430000000,
 			}
-
+			
 			for expChannel, expFreq := range tests {
 				var defaultChannel bool
 				if expChannel < 3 {
 					defaultChannel = true
 				}
-
+				
 				channel, err := band.GetUplinkChannelIndex(expFreq, defaultChannel)
 				assert.NoError(err)
 				assert.Equal(expChannel, channel)
 			}
 		})
-
+		
 		t.Run("GetUplinkChannelIndexForFrequencyDR", func(t *testing.T) {
 			tests := []uint32{
 				2403000000,
@@ -176,14 +176,14 @@ func TestISM2400Band(t *testing.T) {
 				2429000000,
 				2430000000,
 			}
-
+			
 			for expChannel, freq := range tests {
 				channel, err := band.GetUplinkChannelIndexForFrequencyDR(freq, 3)
 				assert.NoError(err)
 				assert.Equal(expChannel, channel)
 			}
 		})
-
+		
 		t.Run("GetCFList", func(t *testing.T) {
 			assert := require.New(t)
 			cFList := band.GetCFList(LoRaWAN_1_0_4)

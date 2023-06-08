@@ -3,14 +3,14 @@ package multicastsetup
 import (
 	"errors"
 	"testing"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMulticastSetup(t *testing.T) {
 	timeToStart := uint32(262657)
-
+	
 	tests := []struct {
 		Name                   string
 		Command                Command
@@ -368,11 +368,11 @@ func TestMulticastSetup(t *testing.T) {
 			ExpectedMarshalError: errors.New("lorawan/applayer/multicastsetup: TimeToStart must be nil when StatusAndMcGroupID contains an error"),
 		},
 	}
-
+	
 	for _, tst := range tests {
 		t.Run(tst.Name, func(t *testing.T) {
 			assert := require.New(t)
-
+			
 			if tst.ExpectedMarshalError != nil {
 				_, err := tst.Command.MarshalBinary()
 				assert.Equal(tst.ExpectedMarshalError, err)
@@ -385,7 +385,7 @@ func TestMulticastSetup(t *testing.T) {
 				b, err := cmds.MarshalBinary()
 				assert.NoError(err)
 				assert.Equal(tst.Bytes, b)
-
+				
 				cmds = Commands{}
 				assert.NoError(cmds.UnmarshalBinary(tst.Uplink, tst.Bytes))
 				assert.Len(cmds, 1)
@@ -398,9 +398,9 @@ func TestMulticastSetup(t *testing.T) {
 func TestUnmarshalCommands(t *testing.T) {
 	assert := require.New(t)
 	timeToStart := uint32(262657)
-
+	
 	// encode two variable sized commands and try to decode them
-
+	
 	commands := Commands{
 		{
 			CID: McClassBSessionAns,
@@ -423,15 +423,15 @@ func TestUnmarshalCommands(t *testing.T) {
 			},
 		},
 	}
-
+	
 	b, err := commands.MarshalBinary()
 	assert.NoError(err)
-
+	
 	assert.Equal(
 		[]byte{0x05, 0x03, 0x01, 0x02, 0x04, 0x05, 0x1f},
 		b,
 	)
-
+	
 	var cmds Commands
 	assert.NoError(cmds.UnmarshalBinary(true, b))
 	assert.Equal(commands, cmds)

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -13,7 +13,7 @@ func TestAU915Band(t *testing.T) {
 	Convey("Given the AU 915-928 band is selected", t, func() {
 		band, err := GetConfig(AU_915_928, true, lorawan.DwellTimeNoLimit)
 		So(err, ShouldBeNil)
-
+		
 		Convey("Then GetDefaults returns the expected value", func() {
 			So(band.GetDefaults(), ShouldResemble, Defaults{
 				RX2Frequency:     923300000,
@@ -24,11 +24,11 @@ func TestAU915Band(t *testing.T) {
 				JoinAcceptDelay2: time.Second * 6,
 			})
 		})
-
+		
 		Convey("Then GetDownlinkTXPower returns the expected value", func() {
 			So(band.GetDownlinkTXPower(0), ShouldEqual, 27)
 		})
-
+		
 		Convey("Then GetPingSlotFrequency returns the expected value", func() {
 			tests := []struct {
 				DevAddr           lorawan.DevAddr
@@ -41,7 +41,7 @@ func TestAU915Band(t *testing.T) {
 					ExpectedFrequency: 925700000,
 				},
 			}
-
+			
 			for _, test := range tests {
 				bt, err := time.ParseDuration(test.BeaconTime)
 				So(err, ShouldBeNil)
@@ -50,7 +50,7 @@ func TestAU915Band(t *testing.T) {
 				So(freq, ShouldEqual, test.ExpectedFrequency)
 			}
 		})
-
+		
 		Convey("When testing the uplink channels", func() {
 			testTable := []struct {
 				Channel   int
@@ -63,19 +63,19 @@ func TestAU915Band(t *testing.T) {
 				{Channel: 64, Frequency: 915900000, MinDR: 6, MaxDR: 7},
 				{Channel: 71, Frequency: 927100000, MinDR: 6, MaxDR: 7},
 			}
-
+			
 			for _, test := range testTable {
 				Convey(fmt.Sprintf("Then channel %d must have frequency %d and min / max data-rates %d/%d", test.Channel, test.Frequency, test.MinDR, test.MaxDR), func() {
 					c, err := band.GetUplinkChannel(test.Channel)
 					So(err, ShouldBeNil)
-
+					
 					So(c.Frequency, ShouldEqual, test.Frequency)
 					So(c.MinDR, ShouldEqual, test.MinDR)
 					So(c.MaxDR, ShouldEqual, test.MaxDR)
 				})
 			}
 		})
-
+		
 		Convey("When testing the downlink channels", func() {
 			testTable := []struct {
 				Frequency    uint32
@@ -86,20 +86,20 @@ func TestAU915Band(t *testing.T) {
 				{Frequency: 915900000, DataRate: 4, Channel: 64, ExpFrequency: 923300000},
 				{Frequency: 915200000, DataRate: 3, Channel: 0, ExpFrequency: 923300000},
 			}
-
+			
 			for _, test := range testTable {
 				Convey(fmt.Sprintf("Then frequency: %d must return frequency: %d", test.Frequency, test.ExpFrequency), func() {
 					txChan, err := band.GetUplinkChannelIndex(test.Frequency, true)
 					So(err, ShouldBeNil)
 					So(txChan, ShouldEqual, test.Channel)
-
+					
 					freq, err := band.GetRX1FrequencyForUplinkFrequency(test.Frequency)
 					So(err, ShouldBeNil)
 					So(freq, ShouldEqual, test.ExpFrequency)
 				})
 			}
 		})
-
+		
 		Convey("Then GetDataRateIndex returns the expected data-rate index", func() {
 			tests := []struct {
 				DataRate   DataRate
@@ -127,20 +127,20 @@ func TestAU915Band(t *testing.T) {
 					ExpectedDR: 12,
 				},
 			}
-
+			
 			for _, t := range tests {
 				dr, err := band.GetDataRateIndex(t.Uplink, t.DataRate)
 				So(err, ShouldBeNil)
 				So(dr, ShouldEqual, t.ExpectedDR)
 			}
 		})
-
+		
 		Convey("When testing LinkADRReqPayload functions", func() {
 			var filteredChans []int
 			for i := 8; i < 72; i++ {
 				filteredChans = append(filteredChans, i)
 			}
-
+			
 			tests := []struct {
 				Name                       string
 				NodeChannels               []int
@@ -216,7 +216,7 @@ func TestAU915Band(t *testing.T) {
 					},
 				},
 			}
-
+			
 			for i, test := range tests {
 				Convey(fmt.Sprintf("testing %s [%d]", test.Name, i), func() {
 					for _, c := range test.DisableChannels {
@@ -227,7 +227,7 @@ func TestAU915Band(t *testing.T) {
 					}
 					pls := band.GetLinkADRReqPayloadsForEnabledUplinkChannelIndices(test.NodeChannels)
 					So(pls, ShouldResemble, test.ExpectedLinkADRReqPayloads)
-
+					
 					chans, err := band.GetEnabledUplinkChannelIndicesForLinkADRReqPayloads(test.NodeChannels, pls)
 					So(err, ShouldBeNil)
 					So(chans, ShouldResemble, test.ExpectedUplinkChannels)

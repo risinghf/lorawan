@@ -8,18 +8,18 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/brocaar/lorawan"
-	"github.com/brocaar/lorawan/band"
+	
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/risinghf/lorawan"
+	"github.com/risinghf/lorawan/band"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
 type SyncClientTestSuite struct {
 	suite.Suite
-
+	
 	client      Client
 	server      *httptest.Server
 	apiRequest  string
@@ -45,7 +45,7 @@ func (ts *SyncClientTestSuite) TearDownSuite() {
 
 func (ts *SyncClientTestSuite) TestJoinReq() {
 	assert := require.New(ts.T())
-
+	
 	req := JoinReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -63,12 +63,12 @@ func (ts *SyncClientTestSuite) TestJoinReq() {
 	}
 	reqB, err := json.Marshal(req)
 	assert.NoError(err)
-
+	
 	lifetime := 60
 	key := KeyEnvelope{
 		AESKey: HEXBytes{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8},
 	}
-
+	
 	resp := JoinAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -89,17 +89,17 @@ func (ts *SyncClientTestSuite) TestJoinReq() {
 	respB, err := json.Marshal(resp)
 	assert.NoError(err)
 	ts.apiResponse = string(respB)
-
+	
 	apiResp, err := ts.client.JoinReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(resp, apiResp)
-
+	
 	assert.Equal(string(reqB), ts.apiRequest)
 }
 
 func (ts *SyncClientTestSuite) TestRejoinReq() {
 	assert := require.New(ts.T())
-
+	
 	req := RejoinReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -117,12 +117,12 @@ func (ts *SyncClientTestSuite) TestRejoinReq() {
 	}
 	reqB, err := json.Marshal(req)
 	assert.NoError(err)
-
+	
 	lifetime := 60
 	key := KeyEnvelope{
 		AESKey: HEXBytes{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8},
 	}
-
+	
 	resp := RejoinAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -143,17 +143,17 @@ func (ts *SyncClientTestSuite) TestRejoinReq() {
 	respB, err := json.Marshal(resp)
 	assert.NoError(err)
 	ts.apiResponse = string(respB)
-
+	
 	apiResp, err := ts.client.RejoinReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(resp, apiResp)
-
+	
 	assert.Equal(string(reqB), ts.apiRequest)
 }
 
 func (ts *SyncClientTestSuite) TestPRStartReq() {
 	assert := require.New(ts.T())
-
+	
 	devAddr := lorawan.DevAddr{1, 2, 3, 4}
 	devEUI := lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8}
 	dr := 2
@@ -161,7 +161,7 @@ func (ts *SyncClientTestSuite) TestPRStartReq() {
 	gwCount := 1
 	rssi := 10
 	snr := 5.5
-
+	
 	req := PRStartReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -190,9 +190,9 @@ func (ts *SyncClientTestSuite) TestPRStartReq() {
 	}
 	reqB, err := json.Marshal(req)
 	assert.NoError(err)
-
+	
 	lifetime := 60
-
+	
 	resp := PRStartAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -215,17 +215,17 @@ func (ts *SyncClientTestSuite) TestPRStartReq() {
 	respB, err := json.Marshal(resp)
 	assert.NoError(err)
 	ts.apiResponse = string(respB)
-
+	
 	apiResp, err := ts.client.PRStartReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(resp, apiResp)
-
+	
 	assert.Equal(string(reqB), ts.apiRequest)
 }
 
 func (ts *SyncClientTestSuite) TestPRStopReq() {
 	assert := require.New(ts.T())
-
+	
 	req := PRStopReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -238,7 +238,7 @@ func (ts *SyncClientTestSuite) TestPRStopReq() {
 	}
 	reqB, err := json.Marshal(req)
 	assert.NoError(err)
-
+	
 	resp := PRStopAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -256,17 +256,17 @@ func (ts *SyncClientTestSuite) TestPRStopReq() {
 	respB, err := json.Marshal(resp)
 	assert.NoError(err)
 	ts.apiResponse = string(respB)
-
+	
 	apiResp, err := ts.client.PRStopReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(resp, apiResp)
-
+	
 	assert.Equal(string(reqB), ts.apiRequest)
 }
 
 func (ts *SyncClientTestSuite) TestXmitDataReq() {
 	assert := require.New(ts.T())
-
+	
 	devAddr := lorawan.DevAddr{1, 2, 3, 4}
 	devEUI := lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8}
 	dr := 2
@@ -274,7 +274,7 @@ func (ts *SyncClientTestSuite) TestXmitDataReq() {
 	gwCount := 1
 	rssi := 10
 	snr := 5.5
-
+	
 	req := XmitDataReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -304,7 +304,7 @@ func (ts *SyncClientTestSuite) TestXmitDataReq() {
 	}
 	reqB, err := json.Marshal(req)
 	assert.NoError(err)
-
+	
 	resp := XmitDataAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -322,21 +322,21 @@ func (ts *SyncClientTestSuite) TestXmitDataReq() {
 	respB, err := json.Marshal(resp)
 	assert.NoError(err)
 	ts.apiResponse = string(respB)
-
+	
 	apiResp, err := ts.client.XmitDataReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(resp, apiResp)
-
+	
 	assert.Equal(string(reqB), ts.apiRequest)
 }
 
 func (ts *SyncClientTestSuite) TestProfileReq() {
 	assert := require.New(ts.T())
-
+	
 	devEUI := lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8}
 	timestamp := ISO8601Time(time.Now().UTC().Truncate(time.Second))
 	handover := Handover
-
+	
 	req := ProfileReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -349,7 +349,7 @@ func (ts *SyncClientTestSuite) TestProfileReq() {
 	}
 	reqB, err := json.Marshal(req)
 	assert.NoError(err)
-
+	
 	resp := ProfileAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -374,20 +374,20 @@ func (ts *SyncClientTestSuite) TestProfileReq() {
 	respB, err := json.Marshal(resp)
 	assert.NoError(err)
 	ts.apiResponse = string(respB)
-
+	
 	apiResp, err := ts.client.ProfileReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(resp, apiResp)
-
+	
 	assert.Equal(string(reqB), ts.apiRequest)
 }
 
 func (ts *SyncClientTestSuite) TestHomeNSReq() {
 	assert := require.New(ts.T())
-
+	
 	devEUI := lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8}
 	netID := lorawan.NetID{1, 2, 3}
-
+	
 	req := HomeNSReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -400,7 +400,7 @@ func (ts *SyncClientTestSuite) TestHomeNSReq() {
 	}
 	reqB, err := json.Marshal(req)
 	assert.NoError(err)
-
+	
 	resp := HomeNSAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -419,11 +419,11 @@ func (ts *SyncClientTestSuite) TestHomeNSReq() {
 	respB, err := json.Marshal(resp)
 	assert.NoError(err)
 	ts.apiResponse = string(respB)
-
+	
 	apiResp, err := ts.client.HomeNSReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(resp, apiResp)
-
+	
 	assert.Equal(string(reqB), ts.apiRequest)
 }
 
@@ -432,12 +432,12 @@ func (ts *SyncClientTestSuite) apiHandler(w http.ResponseWriter, r *http.Request
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-
+	
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		panic(err)
 	}
-
+	
 	ts.apiRequest = string(b)
 	w.Write([]byte(ts.apiResponse))
 }
@@ -448,10 +448,10 @@ func TestSyncClient(t *testing.T) {
 
 type AsyncClientTestSuite struct {
 	suite.Suite
-
+	
 	client      Client
 	redisClient *redis.Client
-
+	
 	server      *httptest.Server
 	apiRequest  string
 	apiResponse string
@@ -460,12 +460,12 @@ type AsyncClientTestSuite struct {
 func (ts *AsyncClientTestSuite) SetupSuite() {
 	assert := require.New(ts.T())
 	var err error
-
+	
 	ts.redisClient = redis.NewClient(&redis.Options{
 		Addr: "redis:6379",
 	})
 	assert.NoError(ts.redisClient.Ping(context.Background()).Err())
-
+	
 	ts.server = httptest.NewServer(http.HandlerFunc(ts.apiHandler))
 	ts.client, err = NewClient(ClientConfig{
 		SenderID:      "010101",
@@ -484,7 +484,7 @@ func (ts *AsyncClientTestSuite) TearDownSuite() {
 
 func (ts *AsyncClientTestSuite) TestRequestTimeout() {
 	assert := require.New(ts.T())
-
+	
 	req := PRStartReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -494,14 +494,14 @@ func (ts *AsyncClientTestSuite) TestRequestTimeout() {
 			MessageType:     PRStartReq,
 		},
 	}
-
+	
 	_, err := ts.client.PRStartReq(context.Background(), req)
 	assert.Equal(ErrAsyncTimeout, errors.Cause(err))
 }
 
 func (ts *AsyncClientTestSuite) TestWrongTransactionID() {
 	assert := require.New(ts.T())
-
+	
 	req := PRStartReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -511,7 +511,7 @@ func (ts *AsyncClientTestSuite) TestWrongTransactionID() {
 			MessageType:     PRStartReq,
 		},
 	}
-
+	
 	ans := PRStartAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -526,19 +526,19 @@ func (ts *AsyncClientTestSuite) TestWrongTransactionID() {
 			},
 		},
 	}
-
+	
 	go func() {
 		time.Sleep(time.Millisecond * 10)
 		assert.NoError(ts.client.HandleAnswer(context.Background(), ans))
 	}()
-
+	
 	_, err := ts.client.PRStartReq(context.Background(), req)
 	assert.Equal(ErrAsyncTimeout, errors.Cause(err))
 }
 
 func (ts *AsyncClientTestSuite) TestJoinReq() {
 	assert := require.New(ts.T())
-
+	
 	req := JoinReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -548,7 +548,7 @@ func (ts *AsyncClientTestSuite) TestJoinReq() {
 			MessageType:     JoinReq,
 		},
 	}
-
+	
 	ans := JoinAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -563,12 +563,12 @@ func (ts *AsyncClientTestSuite) TestJoinReq() {
 			},
 		},
 	}
-
+	
 	go func() {
 		time.Sleep(time.Millisecond * 10)
 		assert.NoError(ts.client.HandleAnswer(context.Background(), ans))
 	}()
-
+	
 	resp, err := ts.client.JoinReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(ans, resp)
@@ -576,7 +576,7 @@ func (ts *AsyncClientTestSuite) TestJoinReq() {
 
 func (ts *AsyncClientTestSuite) TestRejoinReq() {
 	assert := require.New(ts.T())
-
+	
 	req := RejoinReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -586,7 +586,7 @@ func (ts *AsyncClientTestSuite) TestRejoinReq() {
 			MessageType:     RejoinReq,
 		},
 	}
-
+	
 	ans := RejoinAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -601,12 +601,12 @@ func (ts *AsyncClientTestSuite) TestRejoinReq() {
 			},
 		},
 	}
-
+	
 	go func() {
 		time.Sleep(time.Millisecond * 10)
 		assert.NoError(ts.client.HandleAnswer(context.Background(), ans))
 	}()
-
+	
 	resp, err := ts.client.RejoinReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(ans, resp)
@@ -614,7 +614,7 @@ func (ts *AsyncClientTestSuite) TestRejoinReq() {
 
 func (ts *AsyncClientTestSuite) TestPRStartReq() {
 	assert := require.New(ts.T())
-
+	
 	req := PRStartReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -624,7 +624,7 @@ func (ts *AsyncClientTestSuite) TestPRStartReq() {
 			MessageType:     PRStartReq,
 		},
 	}
-
+	
 	ans := PRStartAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -639,12 +639,12 @@ func (ts *AsyncClientTestSuite) TestPRStartReq() {
 			},
 		},
 	}
-
+	
 	go func() {
 		time.Sleep(time.Millisecond * 10)
 		assert.NoError(ts.client.HandleAnswer(context.Background(), ans))
 	}()
-
+	
 	resp, err := ts.client.PRStartReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(ans, resp)
@@ -652,7 +652,7 @@ func (ts *AsyncClientTestSuite) TestPRStartReq() {
 
 func (ts *AsyncClientTestSuite) TestPRStopReq() {
 	assert := require.New(ts.T())
-
+	
 	req := PRStopReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -662,7 +662,7 @@ func (ts *AsyncClientTestSuite) TestPRStopReq() {
 			MessageType:     PRStopReq,
 		},
 	}
-
+	
 	ans := PRStopAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -677,12 +677,12 @@ func (ts *AsyncClientTestSuite) TestPRStopReq() {
 			},
 		},
 	}
-
+	
 	go func() {
 		time.Sleep(time.Millisecond * 10)
 		assert.NoError(ts.client.HandleAnswer(context.Background(), ans))
 	}()
-
+	
 	resp, err := ts.client.PRStopReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(ans, resp)
@@ -690,7 +690,7 @@ func (ts *AsyncClientTestSuite) TestPRStopReq() {
 
 func (ts *AsyncClientTestSuite) TestXmitDataReq() {
 	assert := require.New(ts.T())
-
+	
 	req := XmitDataReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -700,7 +700,7 @@ func (ts *AsyncClientTestSuite) TestXmitDataReq() {
 			MessageType:     XmitDataReq,
 		},
 	}
-
+	
 	ans := XmitDataAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -715,12 +715,12 @@ func (ts *AsyncClientTestSuite) TestXmitDataReq() {
 			},
 		},
 	}
-
+	
 	go func() {
 		time.Sleep(time.Millisecond * 10)
 		assert.NoError(ts.client.HandleAnswer(context.Background(), ans))
 	}()
-
+	
 	resp, err := ts.client.XmitDataReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(ans, resp)
@@ -728,7 +728,7 @@ func (ts *AsyncClientTestSuite) TestXmitDataReq() {
 
 func (ts *AsyncClientTestSuite) TestProfileReq() {
 	assert := require.New(ts.T())
-
+	
 	req := ProfileReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -738,7 +738,7 @@ func (ts *AsyncClientTestSuite) TestProfileReq() {
 			MessageType:     ProfileReq,
 		},
 	}
-
+	
 	ans := ProfileAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -753,12 +753,12 @@ func (ts *AsyncClientTestSuite) TestProfileReq() {
 			},
 		},
 	}
-
+	
 	go func() {
 		time.Sleep(time.Millisecond * 10)
 		assert.NoError(ts.client.HandleAnswer(context.Background(), ans))
 	}()
-
+	
 	resp, err := ts.client.ProfileReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(ans, resp)
@@ -766,7 +766,7 @@ func (ts *AsyncClientTestSuite) TestProfileReq() {
 
 func (ts *AsyncClientTestSuite) TestHomeNSReq() {
 	assert := require.New(ts.T())
-
+	
 	req := HomeNSReqPayload{
 		BasePayload: BasePayload{
 			ProtocolVersion: ProtocolVersion1_0,
@@ -776,7 +776,7 @@ func (ts *AsyncClientTestSuite) TestHomeNSReq() {
 			MessageType:     HomeNSReq,
 		},
 	}
-
+	
 	ans := HomeNSAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -791,12 +791,12 @@ func (ts *AsyncClientTestSuite) TestHomeNSReq() {
 			},
 		},
 	}
-
+	
 	go func() {
 		time.Sleep(time.Millisecond * 10)
 		assert.NoError(ts.client.HandleAnswer(context.Background(), ans))
 	}()
-
+	
 	resp, err := ts.client.HomeNSReq(context.Background(), req)
 	assert.NoError(err)
 	assert.Equal(ans, resp)
@@ -804,7 +804,7 @@ func (ts *AsyncClientTestSuite) TestHomeNSReq() {
 
 func (ts *AsyncClientTestSuite) TestSendAnswer() {
 	assert := require.New(ts.T())
-
+	
 	ans := HomeNSAnsPayload{
 		BasePayloadResult: BasePayloadResult{
 			BasePayload: BasePayload{
@@ -819,10 +819,10 @@ func (ts *AsyncClientTestSuite) TestSendAnswer() {
 			},
 		},
 	}
-
+	
 	ansB, err := json.Marshal(ans)
 	assert.NoError(err)
-
+	
 	assert.NoError(ts.client.SendAnswer(context.Background(), ans))
 	assert.Equal(string(ansB), ts.apiRequest)
 }
@@ -832,12 +832,12 @@ func (ts *AsyncClientTestSuite) apiHandler(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-
+	
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		panic(err)
 	}
-
+	
 	ts.apiRequest = string(b)
 	w.Write([]byte(ts.apiResponse))
 }

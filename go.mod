@@ -2,7 +2,7 @@ module github.com/risinghf/lorawan
 
 require (
 	github.com/NickBall/go-aes-key-wrap v0.0.0-20170929221519-1c3aa3e4dfc5
-	github.com/brocaar/lorawan v0.0.0-20230517133310-3a75f7499f00
+	github.com/risinghf/lorawan v0.0.0-20230517133310-3a75f7499f00
 	github.com/go-redis/redis/v8 v8.8.3
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
 	github.com/pkg/errors v0.9.1

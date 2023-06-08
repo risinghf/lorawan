@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"sort"
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 type au915Band struct {
@@ -50,27 +50,27 @@ func (b *au915Band) GetRX1FrequencyForUplinkFrequency(uplinkFrequency uint32) (u
 	if err != nil {
 		return 0, err
 	}
-
+	
 	rx1Chan, err := b.GetRX1ChannelIndexForUplinkChannelIndex(uplinkChan)
 	if err != nil {
 		return 0, err
 	}
-
+	
 	return b.downlinkChannels[rx1Chan].Frequency, nil
 }
 
 func (b *au915Band) GetLinkADRReqPayloadsForEnabledUplinkChannelIndices(deviceEnabledChannels []int) []lorawan.LinkADRReqPayload {
 	payloadsA := b.band.GetLinkADRReqPayloadsForEnabledUplinkChannelIndices(deviceEnabledChannels)
-
+	
 	enabledChannels := b.GetEnabledUplinkChannelIndices()
 	sort.Ints(enabledChannels)
-
+	
 	out := []lorawan.LinkADRReqPayload{
 		{Redundancy: lorawan.Redundancy{ChMaskCntl: 7}}, // All 125 kHz OFF ChMask applies to channels 64 to 71
 	}
-
+	
 	chMaskCntl := -1
-
+	
 	for _, c := range enabledChannels {
 		// use the ChMask of the first LinkADRReqPayload, besides
 		// turning off all 125 kHz this payload contains the ChMask
@@ -79,7 +79,7 @@ func (b *au915Band) GetLinkADRReqPayloadsForEnabledUplinkChannelIndices(deviceEn
 			out[0].ChMask[c%16] = true
 			continue
 		}
-
+		
 		if c/16 != chMaskCntl {
 			chMaskCntl = c / 16
 			pl := lorawan.LinkADRReqPayload{
@@ -87,18 +87,18 @@ func (b *au915Band) GetLinkADRReqPayloadsForEnabledUplinkChannelIndices(deviceEn
 					ChMaskCntl: uint8(chMaskCntl),
 				},
 			}
-
+			
 			// set the channel mask for this block
 			for _, ec := range enabledChannels {
 				if ec >= chMaskCntl*16 && ec < (chMaskCntl+1)*16 {
 					pl.ChMask[ec%16] = true
 				}
 			}
-
+			
 			out = append(out, pl)
 		}
 	}
-
+	
 	if len(payloadsA) < len(out) {
 		return payloadsA
 	}
@@ -114,7 +114,7 @@ func (b *au915Band) GetEnabledUplinkChannelIndicesForLinkADRReqPayloads(deviceEn
 			chMask[c] = true
 		}
 	}
-
+	
 	for _, pl := range pls {
 		if pl.Redundancy.ChMaskCntl == 6 || pl.Redundancy.ChMaskCntl == 7 {
 			for i := 0; i < 64; i++ {
@@ -124,7 +124,7 @@ func (b *au915Band) GetEnabledUplinkChannelIndicesForLinkADRReqPayloads(deviceEn
 					chMask[i] = false
 				}
 			}
-
+			
 			for i, cm := range pl.ChMask[0:8] {
 				chMask[64+i] = cm
 			}
@@ -133,16 +133,16 @@ func (b *au915Band) GetEnabledUplinkChannelIndicesForLinkADRReqPayloads(deviceEn
 				if int(pl.Redundancy.ChMaskCntl*16)+i >= len(chMask) && !enabled {
 					continue
 				}
-
+				
 				if int(pl.Redundancy.ChMaskCntl*16)+i >= len(chMask) {
 					return nil, ErrChannelDoesNotExist
 				}
-
+				
 				chMask[int(pl.Redundancy.ChMaskCntl*16)+i] = enabled
 			}
 		}
 	}
-
+	
 	// turn the chMask into a slice of enabled channel numbers
 	var out []int
 	for i, enabled := range chMask {
@@ -150,7 +150,7 @@ func (b *au915Band) GetEnabledUplinkChannelIndicesForLinkADRReqPayloads(deviceEn
 			out = append(out, i)
 		}
 	}
-
+	
 	return out, nil
 }
 
@@ -159,7 +159,7 @@ func (b *au915Band) ImplementsTXParamSetup(protocolVersion string) bool {
 	if protocolVersion == "1.0.1" || protocolVersion == "1.0.2" {
 		return false
 	}
-
+	
 	// In later versions it is specified that this mac-command must be
 	// implmented.
 	return true
@@ -216,7 +216,7 @@ func newAU915Band(repeaterCompatible bool, dt lorawan.DwellTime) (Band, error) {
 			downlinkChannels: make([]Channel, 8),
 		},
 	}
-
+	
 	if repeaterCompatible {
 		if dt == lorawan.DwellTime400ms {
 			// repeater compatibility + dwell time
@@ -680,7 +680,7 @@ func newAU915Band(repeaterCompatible bool, dt lorawan.DwellTime) (Band, error) {
 			}
 		}
 	}
-
+	
 	// initialize uplink channel 0 - 63
 	for i := uint32(0); i < 64; i++ {
 		b.uplinkChannels[i] = Channel{
@@ -690,7 +690,7 @@ func newAU915Band(repeaterCompatible bool, dt lorawan.DwellTime) (Band, error) {
 			MaxDR:     5,
 		}
 	}
-
+	
 	// initialize uplink channel 64 - 71
 	for i := uint32(0); i < 8; i++ {
 		b.uplinkChannels[i+64] = Channel{
@@ -700,7 +700,7 @@ func newAU915Band(repeaterCompatible bool, dt lorawan.DwellTime) (Band, error) {
 			enabled:   true,
 		}
 	}
-
+	
 	// initialize downlink channel 0 - 7
 	for i := uint32(0); i < 8; i++ {
 		b.downlinkChannels[i] = Channel{
@@ -710,6 +710,6 @@ func newAU915Band(repeaterCompatible bool, dt lorawan.DwellTime) (Band, error) {
 			enabled:   true,
 		}
 	}
-
+	
 	return &b, nil
 }

@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
+	
 	log "github.com/sirupsen/logrus"
-
-	"github.com/brocaar/lorawan"
-	"github.com/brocaar/lorawan/backend"
+	
+	"github.com/risinghf/lorawan"
+	"github.com/risinghf/lorawan/backend"
 )
 
 // DeviceKeys holds the device (root) keys and the join-nonce to be used
@@ -44,67 +44,67 @@ func NewHandler(config HandlerConfig) (http.Handler, error) {
 	if config.GetDeviceKeysByDevEUIFunc == nil {
 		return nil, errors.New("backend/joinserver: GetDeviceKeysFunc must not be nil")
 	}
-
+	
 	h := handler{
 		config: config,
 		log:    config.Logger,
 	}
-
+	
 	if h.log == nil {
 		h.log = &log.Logger{
 			Out: ioutil.Discard,
 		}
 	}
-
+	
 	if h.config.GetKEKByLabelFunc == nil {
 		h.log.Warning("backend/joinserver: get kek by label function is not set")
-
+		
 		h.config.GetKEKByLabelFunc = func(label string) ([]byte, error) {
 			return nil, nil
 		}
 	}
-
+	
 	if h.config.GetASKEKLabelByDevEUIFunc == nil {
 		h.log.Warning("backend/joinserver: get application-server kek by deveui function is not set")
-
+		
 		h.config.GetASKEKLabelByDevEUIFunc = func(devEUI lorawan.EUI64) (string, error) {
 			return "", nil
 		}
 	}
-
+	
 	if h.config.GetHomeNetIDByDevEUIFunc == nil {
 		h.log.Warning("backend/joinserver: get home netid by deveui function is not set")
-
+		
 		h.config.GetHomeNetIDByDevEUIFunc = func(devEUI lorawan.EUI64) (lorawan.NetID, error) {
 			return lorawan.NetID{}, ErrDevEUINotFound
 		}
 	}
-
+	
 	return &h, nil
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var basePL backend.BasePayload
-
+	
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		h.returnError(w, http.StatusInternalServerError, backend.Other, "read body error")
 		return
 	}
-
+	
 	err = json.Unmarshal(b, &basePL)
 	if err != nil {
 		h.returnError(w, http.StatusBadRequest, backend.Other, err.Error())
 		return
 	}
-
+	
 	h.log.WithFields(log.Fields{
 		"message_type":   basePL.MessageType,
 		"sender_id":      basePL.SenderID,
 		"receiver_id":    basePL.ReceiverID,
 		"transaction_id": basePL.TransactionID,
 	}).Info("backend/joinserver: request received")
-
+	
 	switch basePL.MessageType {
 	case backend.JoinReq:
 		h.handleJoinReq(w, b)
@@ -121,9 +121,9 @@ func (h *handler) returnError(w http.ResponseWriter, code int, resultCode backen
 	h.log.WithFields(log.Fields{
 		"error": msg,
 	}).Error("backend/joinserver: error handling request")
-
+	
 	w.WriteHeader(code)
-
+	
 	pl := backend.Result{
 		ResultCode:  resultCode,
 		Description: msg,
@@ -133,7 +133,7 @@ func (h *handler) returnError(w http.ResponseWriter, code int, resultCode backen
 		h.log.WithError(err).Error("backend/joinserver: marshal json error")
 		return
 	}
-
+	
 	w.Write(b)
 }
 
@@ -153,7 +153,7 @@ func (h *handler) returnJoinReqError(w http.ResponseWriter, basePL backend.BaseP
 			},
 		},
 	}
-
+	
 	h.returnPayload(w, code, jaPL)
 }
 
@@ -173,7 +173,7 @@ func (h *handler) returnRejoinReqError(w http.ResponseWriter, basePL backend.Bas
 			},
 		},
 	}
-
+	
 	h.returnPayload(w, code, jaPL)
 }
 
@@ -193,19 +193,19 @@ func (h *handler) returnHomeNSReqError(w http.ResponseWriter, basePL backend.Bas
 			},
 		},
 	}
-
+	
 	h.returnPayload(w, code, jaPL)
 }
 
 func (h *handler) returnPayload(w http.ResponseWriter, code int, pl interface{}) {
 	w.WriteHeader(code)
-
+	
 	b, err := json.Marshal(pl)
 	if err != nil {
 		h.log.WithError(err).Error("backend/joinserver: marshal json error")
 		return
 	}
-
+	
 	w.Write(b)
 }
 
@@ -216,7 +216,7 @@ func (h *handler) handleJoinReq(w http.ResponseWriter, b []byte) {
 		h.returnError(w, http.StatusBadRequest, backend.Other, err.Error())
 		return
 	}
-
+	
 	dk, err := h.config.GetDeviceKeysByDevEUIFunc(joinReqPL.DevEUI)
 	if err != nil {
 		switch err {
@@ -227,27 +227,27 @@ func (h *handler) handleJoinReq(w http.ResponseWriter, b []byte) {
 		}
 		return
 	}
-
+	
 	nsKEK, err := h.config.GetKEKByLabelFunc(joinReqPL.SenderID)
 	if err != nil {
 		h.returnJoinReqError(w, joinReqPL.BasePayload, http.StatusInternalServerError, backend.Other, err.Error())
 		return
 	}
-
+	
 	asKEKLabel, err := h.config.GetASKEKLabelByDevEUIFunc(joinReqPL.DevEUI)
 	if err != nil {
 		h.returnJoinReqError(w, joinReqPL.BasePayload, http.StatusInternalServerError, backend.Other, err.Error())
 		return
 	}
-
+	
 	asKEK, err := h.config.GetKEKByLabelFunc(asKEKLabel)
 	if err != nil {
 		h.returnJoinReqError(w, joinReqPL.BasePayload, http.StatusInternalServerError, backend.Other, err.Error())
 		return
 	}
-
+	
 	ans := handleJoinRequestWrapper(joinReqPL, dk, asKEKLabel, asKEK, joinReqPL.SenderID, nsKEK)
-
+	
 	h.log.WithFields(log.Fields{
 		"message_type":   ans.BasePayload.MessageType,
 		"sender_id":      ans.BasePayload.SenderID,
@@ -256,7 +256,7 @@ func (h *handler) handleJoinReq(w http.ResponseWriter, b []byte) {
 		"result_code":    ans.Result.ResultCode,
 		"dev_eui":        joinReqPL.DevEUI,
 	}).Info("backend/joinserver: sending response")
-
+	
 	h.returnPayload(w, http.StatusOK, ans)
 }
 
@@ -267,7 +267,7 @@ func (h *handler) handleRejoinReq(w http.ResponseWriter, b []byte) {
 		h.returnError(w, http.StatusBadRequest, backend.Other, err.Error())
 		return
 	}
-
+	
 	dk, err := h.config.GetDeviceKeysByDevEUIFunc(rejoinReqPL.DevEUI)
 	if err != nil {
 		switch err {
@@ -278,27 +278,27 @@ func (h *handler) handleRejoinReq(w http.ResponseWriter, b []byte) {
 		}
 		return
 	}
-
+	
 	nsKEK, err := h.config.GetKEKByLabelFunc(rejoinReqPL.SenderID)
 	if err != nil {
 		h.returnRejoinReqError(w, rejoinReqPL.BasePayload, http.StatusInternalServerError, backend.Other, err.Error())
 		return
 	}
-
+	
 	asKEKLabel, err := h.config.GetASKEKLabelByDevEUIFunc(rejoinReqPL.DevEUI)
 	if err != nil {
 		h.returnRejoinReqError(w, rejoinReqPL.BasePayload, http.StatusInternalServerError, backend.Other, err.Error())
 		return
 	}
-
+	
 	asKEK, err := h.config.GetKEKByLabelFunc(asKEKLabel)
 	if err != nil {
 		h.returnRejoinReqError(w, rejoinReqPL.BasePayload, http.StatusInternalServerError, backend.Other, err.Error())
 		return
 	}
-
+	
 	ans := handleRejoinRequestWrapper(rejoinReqPL, dk, asKEKLabel, asKEK, rejoinReqPL.SenderID, nsKEK)
-
+	
 	h.log.WithFields(log.Fields{
 		"message_type":   ans.BasePayload.MessageType,
 		"sender_id":      ans.BasePayload.SenderID,
@@ -307,7 +307,7 @@ func (h *handler) handleRejoinReq(w http.ResponseWriter, b []byte) {
 		"result_code":    ans.Result.ResultCode,
 		"dev_eui":        rejoinReqPL.DevEUI,
 	}).Info("backend/joinserver: sending response")
-
+	
 	h.returnPayload(w, http.StatusOK, ans)
 }
 
@@ -318,7 +318,7 @@ func (h *handler) handleHomeNSReq(w http.ResponseWriter, b []byte) {
 		h.returnError(w, http.StatusBadRequest, backend.Other, err.Error())
 		return
 	}
-
+	
 	netID, err := h.config.GetHomeNetIDByDevEUIFunc(homeNSReq.DevEUI)
 	if err != nil {
 		switch err {
@@ -329,7 +329,7 @@ func (h *handler) handleHomeNSReq(w http.ResponseWriter, b []byte) {
 		}
 		return
 	}
-
+	
 	ans := backend.HomeNSAnsPayload{
 		BasePayloadResult: backend.BasePayloadResult{
 			BasePayload: backend.BasePayload{
@@ -345,7 +345,7 @@ func (h *handler) handleHomeNSReq(w http.ResponseWriter, b []byte) {
 		},
 		HNetID: netID,
 	}
-
+	
 	h.log.WithFields(log.Fields{
 		"message_type":   ans.BasePayload.MessageType,
 		"sender_id":      ans.BasePayload.SenderID,
@@ -354,6 +354,6 @@ func (h *handler) handleHomeNSReq(w http.ResponseWriter, b []byte) {
 		"result_code":    ans.Result.ResultCode,
 		"dev_eui":        homeNSReq.DevEUI,
 	}).Info("backend/joinserver: sending response")
-
+	
 	h.returnPayload(w, http.StatusOK, ans)
 }

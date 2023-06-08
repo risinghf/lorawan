@@ -2,11 +2,11 @@ package joinserver
 
 import (
 	"fmt"
-
+	
 	"github.com/pkg/errors"
-
-	"github.com/brocaar/lorawan"
-	"github.com/brocaar/lorawan/backend"
+	
+	"github.com/risinghf/lorawan"
+	"github.com/risinghf/lorawan/backend"
 )
 
 var rejoinTasks = []func(*context) error{
@@ -24,18 +24,18 @@ func handleRejoinRequestWrapper(rejoinReqPL backend.RejoinReqPayload, dk DeviceK
 		TransactionID:   rejoinReqPL.TransactionID,
 		MessageType:     backend.RejoinAns,
 	}
-
+	
 	rjaPL, err := handleRejoinRequest(rejoinReqPL, dk, asKEKLabel, asKEK, nsKEKLabel, nsKEK)
 	if err != nil {
 		var resCode backend.ResultCode
-
+		
 		switch errors.Cause(err) {
 		case ErrInvalidMIC:
 			resCode = backend.MICFailed
 		default:
 			resCode = backend.Other
 		}
-
+		
 		rjaPL = backend.RejoinAnsPayload{
 			BasePayloadResult: backend.BasePayloadResult{
 				BasePayload: basePayload,
@@ -46,7 +46,7 @@ func handleRejoinRequestWrapper(rejoinReqPL backend.RejoinReqPayload, dk DeviceK
 			},
 		}
 	}
-
+	
 	rjaPL.BasePayload = basePayload
 	return rjaPL
 }
@@ -60,13 +60,13 @@ func handleRejoinRequest(rejoinReqPL backend.RejoinReqPayload, dk DeviceKeys, as
 		nsKEKLabel:       nsKEKLabel,
 		nsKEK:            nsKEK,
 	}
-
+	
 	for _, f := range rejoinTasks {
 		if err := f(&ctx); err != nil {
 			return ctx.rejoinAnsPaylaod, err
 		}
 	}
-
+	
 	return ctx.rejoinAnsPaylaod, nil
 }
 
@@ -74,15 +74,15 @@ func setRejoinContext(ctx *context) error {
 	if err := ctx.phyPayload.UnmarshalBinary(ctx.rejoinReqPayload.PHYPayload[:]); err != nil {
 		return errors.Wrap(err, "unmarshal phypayload error")
 	}
-
+	
 	if err := ctx.netID.UnmarshalText([]byte(ctx.rejoinReqPayload.SenderID)); err != nil {
 		return errors.Wrap(err, "unmarshal netid error")
 	}
-
+	
 	if err := ctx.joinEUI.UnmarshalText([]byte(ctx.rejoinReqPayload.ReceiverID)); err != nil {
 		return errors.Wrap(err, "unmarshal joineui error")
 	}
-
+	
 	switch v := ctx.phyPayload.MACPayload.(type) {
 	case *lorawan.RejoinRequestType02Payload:
 		ctx.joinType = v.RejoinType
@@ -93,9 +93,9 @@ func setRejoinContext(ctx *context) error {
 	default:
 		return fmt.Errorf("expected rejoin payload, got %T", ctx.phyPayload.MACPayload)
 	}
-
+	
 	ctx.devEUI = ctx.rejoinReqPayload.DevEUI
-
+	
 	return nil
 }
 
@@ -107,7 +107,7 @@ func createRejoinAnsPayload(ctx *context) error {
 			return errors.Wrap(err, "unmarshal cflist error")
 		}
 	}
-
+	
 	phy := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.JoinAccept,
@@ -122,30 +122,30 @@ func createRejoinAnsPayload(ctx *context) error {
 			CFList:     cFList,
 		},
 	}
-
+	
 	jsIntKey, err := getJSIntKey(ctx.deviceKeys.NwkKey, ctx.devEUI)
 	if err != nil {
 		return err
 	}
-
+	
 	jsEncKey, err := getJSEncKey(ctx.deviceKeys.NwkKey, ctx.devEUI)
 	if err != nil {
 		return err
 	}
-
+	
 	if err := phy.SetDownlinkJoinMIC(ctx.joinType, ctx.joinEUI, ctx.devNonce, jsIntKey); err != nil {
 		return err
 	}
-
+	
 	if err := phy.EncryptJoinAcceptPayload(jsEncKey); err != nil {
 		return err
 	}
-
+	
 	b, err := phy.MarshalBinary()
 	if err != nil {
 		return err
 	}
-
+	
 	// as the rejoin-request is only implemented for LoRaWAN1.1+ there is no
 	// need to check the OptNeg flag
 	ctx.rejoinAnsPaylaod = backend.RejoinAnsPayload{
@@ -157,12 +157,12 @@ func createRejoinAnsPayload(ctx *context) error {
 		PHYPayload: backend.HEXBytes(b),
 		// TODO: add Lifetime?
 	}
-
+	
 	ctx.rejoinAnsPaylaod.AppSKey, err = backend.NewKeyEnvelope(ctx.asKEKLabel, ctx.asKEK, ctx.appSKey)
 	if err != nil {
 		return err
 	}
-
+	
 	ctx.rejoinAnsPaylaod.FNwkSIntKey, err = backend.NewKeyEnvelope(ctx.nsKEKLabel, ctx.nsKEK, ctx.fNwkSIntKey)
 	if err != nil {
 		return err
@@ -175,6 +175,6 @@ func createRejoinAnsPayload(ctx *context) error {
 	if err != nil {
 		return err
 	}
-
+	
 	return nil
 }

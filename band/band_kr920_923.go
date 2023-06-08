@@ -2,8 +2,8 @@ package band
 
 import (
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 type kr920Band struct {
@@ -88,7 +88,7 @@ func newKR920Band(repeaterCompatible bool) (Band, error) {
 				{Frequency: 922300000, MinDR: 0, MaxDR: 5, enabled: true},
 				{Frequency: 922500000, MinDR: 0, MaxDR: 5, enabled: true},
 			},
-
+			
 			downlinkChannels: []Channel{
 				{Frequency: 922100000, MinDR: 0, MaxDR: 5, enabled: true},
 				{Frequency: 922300000, MinDR: 0, MaxDR: 5, enabled: true},
@@ -96,7 +96,7 @@ func newKR920Band(repeaterCompatible bool) (Band, error) {
 			},
 		},
 	}
-
+	
 	if repeaterCompatible {
 		b.band.maxPayloadSizePerDR = map[string]map[string]map[int]MaxPayloadSize{
 			LoRaWAN_1_0_2: map[string]map[int]MaxPayloadSize{
@@ -200,6 +200,6 @@ func newKR920Band(repeaterCompatible bool) (Band, error) {
 			},
 		}
 	}
-
+	
 	return &b, nil
 }

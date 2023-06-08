@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
+	
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/brocaar/lorawan"
-	"github.com/brocaar/lorawan/backend"
+	
+	"github.com/risinghf/lorawan"
+	"github.com/risinghf/lorawan/backend"
 )
 
 type JoinServerTestSuite struct {
@@ -20,26 +20,26 @@ type JoinServerTestSuite struct {
 	asKEKLabel string
 	keks       map[string][]byte
 	netIDs     map[lorawan.EUI64]lorawan.NetID
-
+	
 	server *httptest.Server
 }
 
 func (ts *JoinServerTestSuite) SetupSuite() {
 	assert := require.New(ts.T())
-
+	
 	ts.deviceKeys = make(map[lorawan.EUI64]DeviceKeys)
 	ts.keks = make(map[string][]byte)
-
+	
 	config := HandlerConfig{
 		GetDeviceKeysByDevEUIFunc: ts.getDeviceKeys,
 		GetASKEKLabelByDevEUIFunc: ts.getASKEKLabelByDevEUI,
 		GetKEKByLabelFunc:         ts.getKEKByLabel,
 		GetHomeNetIDByDevEUIFunc:  ts.getHomeNetIDByDevEUI,
 	}
-
+	
 	handler, err := NewHandler(config)
 	assert.NoError(err)
-
+	
 	ts.server = httptest.NewServer(handler)
 }
 
@@ -51,7 +51,7 @@ func (ts *JoinServerTestSuite) getDeviceKeys(devEUI lorawan.EUI64) (DeviceKeys, 
 	if dk, ok := ts.deviceKeys[devEUI]; ok {
 		return dk, nil
 	}
-
+	
 	return DeviceKeys{}, ErrDevEUINotFound
 }
 
@@ -67,13 +67,13 @@ func (ts *JoinServerTestSuite) getHomeNetIDByDevEUI(devEUI lorawan.EUI64) (loraw
 	if netID, ok := ts.netIDs[devEUI]; ok {
 		return netID, nil
 	}
-
+	
 	return lorawan.NetID{}, ErrDevEUINotFound
 }
 
 func (ts *JoinServerTestSuite) TestJoinRequest() {
 	assert := require.New(ts.T())
-
+	
 	cFList := lorawan.CFList{
 		CFListType: lorawan.CFListChannel,
 		Payload: &lorawan.CFListChannelPayload{
@@ -85,13 +85,13 @@ func (ts *JoinServerTestSuite) TestJoinRequest() {
 	}
 	cFListB, err := cFList.MarshalBinary()
 	assert.NoError(err)
-
+	
 	dk := DeviceKeys{
 		DevEUI:    lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
 		NwkKey:    lorawan.AES128Key{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8},
 		JoinNonce: 65536,
 	}
-
+	
 	validJRPHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.JoinRequest,
@@ -106,7 +106,7 @@ func (ts *JoinServerTestSuite) TestJoinRequest() {
 	assert.NoError(validJRPHY.SetUplinkJoinMIC(dk.NwkKey))
 	validJRPHYBytes, err := validJRPHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	invalidMICJRPHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.JoinRequest,
@@ -121,7 +121,7 @@ func (ts *JoinServerTestSuite) TestJoinRequest() {
 	assert.NoError(invalidMICJRPHY.SetUplinkJoinMIC(lorawan.AES128Key{}))
 	invalidMICJRPHYBytes, err := invalidMICJRPHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	validJAPHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.JoinAccept,
@@ -151,7 +151,7 @@ func (ts *JoinServerTestSuite) TestJoinRequest() {
 	assert.NoError(validJAPHY.EncryptJoinAcceptPayload(dk.NwkKey))
 	validJAPHYBytes, err := validJAPHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	validJAPHYLW11 := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.JoinAccept,
@@ -181,11 +181,11 @@ func (ts *JoinServerTestSuite) TestJoinRequest() {
 	jsIntKey, err := getJSIntKey(dk.NwkKey, dk.DevEUI)
 	assert.NoError(err)
 	assert.NoError(validJAPHYLW11.SetDownlinkJoinMIC(lorawan.JoinRequestType, lorawan.EUI64{8, 7, 6, 5, 4, 3, 2, 1}, 258, jsIntKey))
-
+	
 	assert.NoError(validJAPHYLW11.EncryptJoinAcceptPayload(dk.NwkKey))
 	validJAPHYLW11Bytes, err := validJAPHYLW11.MarshalBinary()
 	assert.NoError(err)
-
+	
 	tests := []struct {
 		Name               string
 		DeviceKeys         map[lorawan.EUI64]DeviceKeys
@@ -425,25 +425,25 @@ func (ts *JoinServerTestSuite) TestJoinRequest() {
 			},
 		},
 	}
-
+	
 	for _, tst := range tests {
 		ts.T().Run(tst.Name, func(t *testing.T) {
 			assert := require.New(t)
-
+			
 			ts.deviceKeys = tst.DeviceKeys
 			ts.asKEKLabel = tst.ASKEKLabel
 			ts.keks = tst.KEKs
-
+			
 			b, err := json.Marshal(tst.RequestPayload)
 			assert.NoError(err)
-
+			
 			resp, err := http.Post(ts.server.URL, "application/json", bytes.NewReader(b))
 			assert.NoError(err)
 			defer resp.Body.Close()
-
+			
 			var ansPayload backend.JoinAnsPayload
 			assert.NoError(json.NewDecoder(resp.Body).Decode(&ansPayload))
-
+			
 			assert.Equal(tst.ExpectedAnsPayload, ansPayload)
 		})
 	}
@@ -451,7 +451,7 @@ func (ts *JoinServerTestSuite) TestJoinRequest() {
 
 func (ts *JoinServerTestSuite) TestRejoinRequest() {
 	assert := require.New(ts.T())
-
+	
 	cFList := lorawan.CFList{
 		CFListType: lorawan.CFListChannel,
 		Payload: &lorawan.CFListChannelPayload{
@@ -463,18 +463,18 @@ func (ts *JoinServerTestSuite) TestRejoinRequest() {
 	}
 	cFListB, err := cFList.MarshalBinary()
 	assert.NoError(err)
-
+	
 	dk := DeviceKeys{
 		DevEUI:    lorawan.EUI64{1, 2, 3, 4, 5, 6, 7, 8},
 		NwkKey:    lorawan.AES128Key{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8},
 		JoinNonce: 65536,
 	}
-
+	
 	jsIntKey, err := getJSIntKey(dk.NwkKey, dk.DevEUI)
 	assert.NoError(err)
 	jsEncKey, err := getJSEncKey(dk.NwkKey, dk.DevEUI)
 	assert.NoError(err)
-
+	
 	rj0PHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.RejoinRequest,
@@ -490,7 +490,7 @@ func (ts *JoinServerTestSuite) TestRejoinRequest() {
 	// no need to set the MIC as it is not validated by the js
 	rj0PHYBytes, err := rj0PHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	rj1PHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.RejoinRequest,
@@ -506,7 +506,7 @@ func (ts *JoinServerTestSuite) TestRejoinRequest() {
 	assert.NoError(rj1PHY.SetUplinkJoinMIC(jsIntKey))
 	rj1PHYBytes, err := rj1PHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	rj2PHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.RejoinRequest,
@@ -522,7 +522,7 @@ func (ts *JoinServerTestSuite) TestRejoinRequest() {
 	// no need to set the MIC as it is not validated by the js
 	rj2PHYBytes, err := rj2PHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	ja0PHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.JoinAccept,
@@ -550,11 +550,11 @@ func (ts *JoinServerTestSuite) TestRejoinRequest() {
 		},
 	}
 	assert.NoError(ja0PHY.SetDownlinkJoinMIC(lorawan.RejoinRequestType0, lorawan.EUI64{8, 7, 6, 5, 4, 3, 2, 1}, 123, jsIntKey))
-
+	
 	assert.NoError(ja0PHY.EncryptJoinAcceptPayload(jsEncKey))
 	ja0PHYBytes, err := ja0PHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	ja1PHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.JoinAccept,
@@ -585,7 +585,7 @@ func (ts *JoinServerTestSuite) TestRejoinRequest() {
 	assert.NoError(ja1PHY.EncryptJoinAcceptPayload(jsEncKey))
 	ja1PHYBytes, err := ja1PHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	ja2PHY := lorawan.PHYPayload{
 		MHDR: lorawan.MHDR{
 			MType: lorawan.JoinAccept,
@@ -607,7 +607,7 @@ func (ts *JoinServerTestSuite) TestRejoinRequest() {
 	assert.NoError(ja2PHY.EncryptJoinAcceptPayload(jsEncKey))
 	ja2PHYBytes, err := ja2PHY.MarshalBinary()
 	assert.NoError(err)
-
+	
 	tests := []struct {
 		Name               string
 		DeviceKeys         map[lorawan.EUI64]DeviceKeys
@@ -769,25 +769,25 @@ func (ts *JoinServerTestSuite) TestRejoinRequest() {
 			},
 		},
 	}
-
+	
 	for _, tst := range tests {
 		ts.T().Run(tst.Name, func(t *testing.T) {
 			assert := require.New(t)
-
+			
 			ts.deviceKeys = tst.DeviceKeys
 			ts.asKEKLabel = tst.ASKEKLabel
 			ts.keks = tst.KEKs
-
+			
 			b, err := json.Marshal(tst.RequestPayload)
 			assert.NoError(err)
-
+			
 			resp, err := http.Post(ts.server.URL, "application/json", bytes.NewReader(b))
 			assert.NoError(err)
 			defer resp.Body.Close()
-
+			
 			var ansPayload backend.RejoinAnsPayload
 			assert.NoError(json.NewDecoder(resp.Body).Decode(&ansPayload))
-
+			
 			assert.Equal(tst.ExpectedAnsPayload, ansPayload)
 		})
 	}
@@ -863,23 +863,23 @@ func (ts *JoinServerTestSuite) TestHomeNSReq() {
 			},
 		},
 	}
-
+	
 	for _, tst := range tests {
 		ts.T().Run(tst.Name, func(t *testing.T) {
 			assert := require.New(t)
-
+			
 			ts.netIDs = tst.NetIDs
-
+			
 			b, err := json.Marshal(tst.RequestPayload)
 			assert.NoError(err)
-
+			
 			resp, err := http.Post(ts.server.URL, "application/json", bytes.NewReader(b))
 			assert.NoError(err)
 			defer resp.Body.Close()
-
+			
 			var ansPayload backend.HomeNSAnsPayload
 			assert.NoError(json.NewDecoder(resp.Body).Decode(&ansPayload))
-
+			
 			assert.Equal(tst.ExpectedAnsPayload, ansPayload)
 		})
 	}

@@ -2,8 +2,8 @@ package band
 
 import (
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 // see: https://lora-developers.semtech.com/library/tech-papers-and-guides/physical-layer-proposal-2.4ghz
@@ -98,7 +98,7 @@ func newISM2400Band(repeaterCompatible bool) (Band, error) {
 			},
 		},
 	}
-
+	
 	if repeaterCompatible {
 		b.band.maxPayloadSizePerDR = map[string]map[string]map[int]MaxPayloadSize{
 			latest: map[string]map[int]MaxPayloadSize{
@@ -130,6 +130,6 @@ func newISM2400Band(repeaterCompatible bool) (Band, error) {
 			},
 		}
 	}
-
+	
 	return &b, nil
 }

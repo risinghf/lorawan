@@ -2,8 +2,8 @@ package band
 
 import (
 	"time"
-
-	"github.com/brocaar/lorawan"
+	
+	"github.com/risinghf/lorawan"
 )
 
 type eu863Band struct {
@@ -113,7 +113,7 @@ func newEU863Band(repeatedCompatible bool) (Band, error) {
 			},
 		},
 	}
-
+	
 	if repeatedCompatible {
 		b.band.maxPayloadSizePerDR = map[string]map[string]map[int]MaxPayloadSize{
 			LoRaWAN_1_0_0: map[string]map[int]MaxPayloadSize{
@@ -301,6 +301,6 @@ func newEU863Band(repeatedCompatible bool) (Band, error) {
 			},
 		}
 	}
-
+	
 	return &b, nil
 }
